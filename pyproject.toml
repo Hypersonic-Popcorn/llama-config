@@ -8,6 +8,7 @@ dependencies = [
     "docker>=7.1.0",
     "pydantic>=2.13.3",
     "pydantic-settings>=2.14.0",
+    "ruamel-yaml>=0.19.1",
     "types-docker>=7.1.0.20260409",
 ]
 
