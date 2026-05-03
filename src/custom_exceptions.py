@@ -1,0 +1,2 @@
+class ContainerNotRunning(Exception):
+    pass
