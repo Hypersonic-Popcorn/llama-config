@@ -1,0 +1,16 @@
+[project]
+name = "llama-config"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.3",
+    "black>=26.3.1",
+    "flake8>=7.3.0",
+    "pytest>=9.0.3",
+    "yamllint>=1.38.0",
+]
