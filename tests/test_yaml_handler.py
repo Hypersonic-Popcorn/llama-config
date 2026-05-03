@@ -231,3 +231,43 @@ def test_restore_backup_raises_permission_error(tmp_write_protect_dir):
 
     config_path.chmod(0o644)
     config_path.unlink()
+
+
+def test_read_config_returns_empty_on_non_dict_yaml(mock_settings):
+    config_path = mock_settings.config_path
+    config_path.write_text("42\n")
+
+    from src.core.yaml_handler import read_config
+
+    result = read_config()
+    assert result == {}
+
+
+def test_write_config_catches_generic_exception(mock_settings):
+    from src.core.yaml_handler import write_config
+
+    with patch("ruamel.yaml.YAML.dump", side_effect=ValueError("dump failed")):
+        with pytest.raises(ValueError, match="dump failed"):
+            write_config({"model": "test"})
+
+
+def test_load_history_returns_loaded_data(mock_settings):
+    from src.core.yaml_handler import _load_history
+
+    history_path = mock_settings.backup_dir / "backup_history.json"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    history_path.write_text(json.dumps([{"backup_id": "test.yaml"}]))
+
+    result = _load_history()
+    assert result == [{"backup_id": "test.yaml"}]
+
+
+def test_load_history_returns_empty_on_bad_json(mock_settings):
+    from src.core.yaml_handler import _load_history
+
+    history_path = mock_settings.backup_dir / "backup_history.json"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    history_path.write_text("{{not valid}}")
+
+    result = _load_history()
+    assert result == []

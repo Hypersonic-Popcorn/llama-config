@@ -210,3 +210,46 @@ def test_scan_models_handles_permission_error_in_subdir(tmp_path):
 
     assert len(result) == 1
     assert result[0]["name"] == "good"
+
+
+def test_read_model_metadata_handles_field_index_error():
+    reader = MagicMock()
+    field = MagicMock()
+    field.contents.side_effect = IndexError("out of bounds")
+    reader.get_field.return_value = field
+
+    with patch(gguf_patch, return_value=reader):
+        with patch.object(Path, "exists", return_value=True):
+            with patch("os.path.getsize", return_value=100):
+                result = read_model_metadata("/fake/model.gguf")
+
+    assert result is not None
+    assert result["name"] is None
+
+
+def test_read_model_metadata_handles_field_attribute_error():
+    reader = MagicMock()
+    field = MagicMock()
+    field.contents.side_effect = AttributeError("bad field")
+    reader.get_field.return_value = field
+
+    with patch(gguf_patch, return_value=reader):
+        with patch.object(Path, "exists", return_value=True):
+            with patch("os.path.getsize", return_value=100):
+                result = read_model_metadata("/fake/model.gguf")
+
+    assert result is not None
+    assert result["name"] is None
+
+
+def test_read_model_metadata_handles_getsize_oserror():
+    reader = MagicMock()
+    reader.get_field.return_value = None
+
+    with patch(gguf_patch, return_value=reader):
+        with patch.object(Path, "exists", return_value=True):
+            with patch("os.path.getsize", side_effect=OSError("cannot stat")):
+                result = read_model_metadata("/fake/model.gguf")
+
+    assert result is not None
+    assert result["file_size"] is None
