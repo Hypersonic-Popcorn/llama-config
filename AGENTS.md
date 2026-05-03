@@ -42,4 +42,5 @@ configuration directly.
 
 When working with Python code, read and follow: @rules/python.md
 When working on the frontend read and follow: @rules/frontend.md
+When writing tests, read and follow: @rules/testing_practices.md
 Nothing in the local_test directory should be staged or committed to git.
