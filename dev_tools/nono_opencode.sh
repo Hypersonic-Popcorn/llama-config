@@ -11,6 +11,9 @@ nono run -v --log-file /tmp/nono.log --profile opencode \
   --read /home/aria/.config/opencode/rules \
   --read-file ~/.ssh/config \
   --read-file ~/.ssh/id_ed25519_github \
+  --read-file ~/.ssh/id_ed25519_github.pub \
+  --read-file ~/.ssh/id_ed25519_github-cert \
+  --read-file ~/.ssh/id_ed25519_github-cert.pub \
   --read-file ~/.ssh/known_hosts \
   --read-file ~/.cargo/bin/nono \
   --allow-file /var/run/docker.sock \
