@@ -340,22 +340,26 @@ def test_parse_server_markdown_detects_float_type():
 
 def test_parse_default_handles_true():
     from src.core.option_parser import _parse_default
+
     assert _parse_default("true") is True
     assert _parse_default("TRUE") is True
 
 
 def test_parse_default_handles_false():
     from src.core.option_parser import _parse_default
+
     assert _parse_default("false") is False
 
 
 def test_parse_default_handles_none():
     from src.core.option_parser import _parse_default
+
     assert _parse_default("none") is None
 
 
 def test_parse_default_handles_string():
     from src.core.option_parser import _parse_default
+
     assert _parse_default("hello") == "hello"
     assert _parse_default("'quoted'") == "quoted"
 

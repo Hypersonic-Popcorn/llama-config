@@ -2,11 +2,11 @@
 
 ```
 uv run pytest
-uv run black .
+PY_VER=$(cat .python-version | tr -d '[:space:]'); MAJOR=$(echo $PY_VER | cut -d. -f1); MINOR=$(echo $PY_VER | cut -d. -f2); uv run black --target-version "py${MAJOR}${MINOR}" .
 ```
 
 - Wrap lines at 88 characters (per `.flake8` and `[tool.black]` line-length).
-- Run `uv run basedpyright` (auto-detects Python 3.12 from `.python-version`).
+- Run `uv run basedpyright` (auto-detects Python version from `.python-version`).
 
 ## Architecture
 
