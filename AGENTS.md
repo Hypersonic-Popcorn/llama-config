@@ -16,6 +16,22 @@ For the backend, read and follow: @plan_backend.md
 - **No conftest.py** — all fixtures are defined in individual test files.
 - **Follow the .python-version for python syntax**
 
+## Nono Sandbox
+
+When a file or directory access fails, run:
+
+    nono why --self --path <path> --op <read|write|readwrite> --json
+
+Present the result to the user and ask them to update the nono script before retrying.
+
+If the set of paths a new tool or command needs is unknown, suggest the user run:
+
+    nono learn --profile opencode -- <command>
+
+This traces the command and shows what paths would need to be allowed. The user
+must update the nono script themselves — never attempt to modify the sandbox
+configuration directly.
+
 ## Coding conventions
 
 When working with Python code, read and follow: @rules/python.md

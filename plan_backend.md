@@ -21,6 +21,7 @@ uv add docker                # Docker SDK for Python
 uv add gguf                  # Read metadata from .gguf model files
 uv add httpx                 # HTTP client for health-checking llama-swap
 uv add pydantic              # Data validation (comes with FastAPI, but pin it explicitly)
+uv add pydantic-settings
 ```
 
 ### Why these choices
@@ -41,7 +42,7 @@ uv add pydantic              # Data validation (comes with FastAPI, but pin it e
 ## Project Structure
 
 ```
-llama-config/
+llama-config/src/
 ├── main.py                  # FastAPI app entry point
 ├── api/
 │   ├── __init__.py
