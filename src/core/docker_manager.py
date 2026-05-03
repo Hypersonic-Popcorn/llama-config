@@ -23,6 +23,20 @@ def get_container() -> Container:
         raise ContainerNotRunning(msg)
 
 
+def _ensure_container_running() -> Container:
+    container = get_container()
+    status: str = container.status  # type: ignore[assignment]
+    if status != "running":
+        # fmt: off
+        msg = (
+            f"Container '{settings.docker_container_name}' "
+            f"is not running (status: {status})"
+        )
+        # fmt: on
+        raise ContainerNotRunning(msg)
+    return container
+
+
 def container_is_running() -> bool:
     try:
         container = get_container()
@@ -33,7 +47,7 @@ def container_is_running() -> bool:
 
 
 def exec_in_container(cmd: str, user: str = "ubuntu") -> tuple[int, str]:
-    container = get_container()
+    container = _ensure_container_running()
     try:
         result = container.exec_run(cmd, user=user)  # type: ignore
         exit_code = result.exit_code
@@ -46,7 +60,7 @@ def exec_in_container(cmd: str, user: str = "ubuntu") -> tuple[int, str]:
 
 
 def restart_container() -> None:
-    container = get_container()
+    container = _ensure_container_running()
     try:
         container.restart()  # type: ignore[union-attr]
     except (NotFound, APIError) as e:
@@ -54,7 +68,7 @@ def restart_container() -> None:
 
 
 def get_logs(tail: int = 100) -> list[str]:
-    container = get_container()
+    container = _ensure_container_running()
     try:
         result = container.logs(tail=tail, stderr=True)  # type: ignore
         return result.decode("utf-8").splitlines()
