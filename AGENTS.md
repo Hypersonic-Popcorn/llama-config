@@ -18,6 +18,7 @@ For the backend, read and follow: @plan_backend.md
 - **Package manager**: use `uv` — not pip, poetry, or pdm. Run `uv sync` after pulling.
 - **No conftest.py** — all fixtures are defined in individual test files.
 - **Follow the .python-version for python syntax**
+- **Git workflow**: when you ask me to "merge", "stage, commit, and merge", or similar, I will automatically handle all three steps — staging relevant files, committing with a descriptive message, and merging into the target branch. No need to say "please stage" or "go ahead".
 - **Never commit directly to main** — create a feature branch (e.g. `feat/foo`), commit there, then merge to main when complete. No need to create PRs on GitHub.
 - **Reference config**: `config_example.yaml` is a real llama-swap config — use it to understand the actual YAML format and nested keys.
 
