@@ -6,6 +6,7 @@ uv run black .
 ```
 
 - Wrap lines at 88 characters (per `.flake8` and `[tool.black]` line-length).
+- Run `uv run basedpyright` (auto-detects Python 3.12 from `.python-version`).
 
 ## Architecture
 
