@@ -21,3 +21,10 @@ dev = [
     "types-docker>=7.1.0.20260409",
     "yamllint>=1.38.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
