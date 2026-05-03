@@ -5,6 +5,8 @@ uv run pytest
 uv run black .
 ```
 
+- Wrap lines at 88 characters (per `.flake8` and `[tool.black]` line-length).
+
 ## Architecture
 
 For frontend,read and follow: @plan_frontend.md
@@ -15,6 +17,7 @@ For the backend, read and follow: @plan_backend.md
 - **Package manager**: use `uv` — not pip, poetry, or pdm. Run `uv sync` after pulling.
 - **No conftest.py** — all fixtures are defined in individual test files.
 - **Follow the .python-version for python syntax**
+- **Never commit directly to main** — create a feature branch (e.g. `feat/foo`) and ask to merge or push.
 
 ## Nono Sandbox
 
