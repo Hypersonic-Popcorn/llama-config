@@ -174,18 +174,24 @@ class TestConfigRoutes:
 
 class TestModelRoutes:
     def test_list_models(self, client):
-        from src.core.model import Model, ScanResult
+        from src.api import model_routes
 
-        result = ScanResult(
-            models=[
-                Model(name="test", filename="test.gguf", full_path="/models/test.gguf",
-                      architecture="llama", context_length=4096, parameter_count="7B",
-                      quantization="Q4_0", file_size=1234567)
-            ],
-            errors=[],
-        )
-        with patch("src.api.model_routes.scan_models", return_value=result):
-            resp = client.get("/api/models")
+        model_routes._models_cache = [
+            {
+                "name": "test",
+                "architecture": "llama",
+                "context_length": 4096,
+                "parameter_count": "7B",
+                "quantization": "Q4_0",
+                "file_size": 1234567,
+                "filename": "test.gguf",
+                "full_path": "/models/test.gguf",
+                "size": 1234567,
+                "quant": "Q4_0",
+            }
+        ]
+
+        resp = client.get("/api/models")
 
         assert resp.status_code == 200
         data = resp.json()

@@ -353,6 +353,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--color-fg);
+}
+
+.model-item:hover {
+  background-color: var(--color-active-bg);
 }
 
 .model-item.selected {
@@ -375,6 +380,19 @@ body {
   background-color: var(--color-amber);
 }
 
+.model-toggle {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.model-untoggled {
+  color: var(--color-gray);
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
 .model-empty {
   color: var(--color-gray);
 }
@@ -382,6 +400,7 @@ body {
 .model-detail {
   flex: 1;
   padding: 16px;
+  color: var(--color-fg);
 }
 
 .model-detail h3 {
@@ -398,6 +417,7 @@ body {
 
 .meta-row strong {
   font-weight: bold;
+  color: var(--color-fg);
 }
 
 .status-row {
