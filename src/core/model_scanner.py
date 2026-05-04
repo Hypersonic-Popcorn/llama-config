@@ -1,21 +1,16 @@
+import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import gguf
 
+from src.core.model import Model, ScanResult
 
-def _get_field_value(reader: gguf.GGUFReader, key: str) -> str | int | float | None:
-    field = reader.get_field(key)
-    if field is None:
-        return None
-    try:
-        return field.contents(0)
-    except (IndexError, AttributeError):
-        return None
+logger = logging.getLogger(__name__)
 
 
-def read_model_metadata(path: str | Path) -> dict[str, Any] | None:
+def read_model_metadata(path: str | Path) -> Model | None:
     path = Path(path)
 
     if not path.exists():
@@ -23,7 +18,7 @@ def read_model_metadata(path: str | Path) -> dict[str, Any] | None:
 
     try:
         reader = gguf.GGUFReader(path)
-    except (OSError, ValueError):
+    except (OSError, ValueError) as e:
         return None
 
     try:
@@ -31,21 +26,30 @@ def read_model_metadata(path: str | Path) -> dict[str, Any] | None:
     except OSError:
         file_size = None
 
-    return {
-        "name": _get_field_value(reader, "general.name"),
-        "architecture": _get_field_value(reader, "general.architecture"),
-        "context_length": _get_field_value(reader, "llama.context_length"),
-        "parameter_count": _get_field_value(reader, "general.parameter_count"),
-        "quantization": _get_field_value(reader, "general.quantization_version"),
-        "file_size": file_size,
-        "filename": path.name,
-        "full_path": str(path),
-    }
+    def _get_field(key: str) -> Any:
+        field_obj = reader.get_field(key)
+        if field_obj is None:
+            return None
+        try:
+            return field_obj.contents(0)
+        except (IndexError, AttributeError):
+            return None
+
+    return Model(
+        name=cast(str | None, _get_field("general.name")),
+        architecture=cast(str | None, _get_field("general.architecture")),
+        context_length=cast(int | None, _get_field("llama.context_length")),
+        parameter_count=cast(int | None, _get_field("general.parameter_count")),
+        quantization=cast(int | None, _get_field("general.quantization_version")),
+        file_size=file_size,
+        filename=path.name,
+        full_path=str(path),
+    )
 
 
-def scan_models(directory: str | Path) -> list[dict[str, Any]]:
+def scan_models(directory: str | Path) -> ScanResult:
+    result = ScanResult()
     directory = Path(directory)
-    models: list[dict[str, Any]] = []
 
     for root, _dirs, files in os.walk(directory):
         for filename in files:
@@ -57,10 +61,14 @@ def scan_models(directory: str | Path) -> list[dict[str, Any]]:
                 meta = read_model_metadata(filepath)
             except FileNotFoundError:
                 continue
-
-            if meta is None:
+            except (OSError, ValueError) as e:
+                result.errors.append(f"InvalidModel: {filepath}: {e}")
                 continue
 
-            models.append(meta)
+            if meta is None:
+                result.errors.append(f"InvalidModel: {filepath}: unreadable GGUF data")
+                continue
 
-    return models
+            result.models.append(meta)
+
+    return result

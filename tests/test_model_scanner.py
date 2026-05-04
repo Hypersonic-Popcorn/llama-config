@@ -1,16 +1,15 @@
-import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from typing import Any
 
 import pytest
 
+from src.core.model import Model, ScanResult
 from src.core.model_scanner import read_model_metadata, scan_models
 
 gguf_patch = "src.core.model_scanner.gguf.GGUFReader"
 
 
-def _make_reader(field_values: dict[str, Any] | None = None):
+def _make_reader(field_values: dict | None = None):  # pyright: ignore
     reader = MagicMock()
     if field_values is None:
         reader.get_field.return_value = None
@@ -44,35 +43,33 @@ def test_read_model_metadata_returns_metadata():
                 result = read_model_metadata("/fake/model.gguf")
 
     assert result is not None
-    assert result["name"] == "llama-2-7b"
-    assert result["architecture"] == "llama"
-    assert result["context_length"] == 4096
-    assert result["parameter_count"] == 6_738_000_000
-    assert result["quantization"] == 2
-    assert result["file_size"] == 4_200_000_000
-    assert result["filename"] == "model.gguf"
-    assert result["full_path"] == "/fake/model.gguf"
+    assert isinstance(result, Model)
+    assert result.name == "llama-2-7b"
+    assert result.architecture == "llama"
+    assert result.context_length == 4096
+    assert result.parameter_count == 6_738_000_000
+    assert result.quantization == 2
+    assert result.file_size == 4_200_000_000
+    assert result.filename == "model.gguf"
+    assert result.full_path == "/fake/model.gguf"
 
 
-def test_read_model_metadata_returns_dict_keys():
+def test_read_model_metadata_returns_model_with_none_fields():
     with patch(gguf_patch, return_value=_make_reader()):
         with patch.object(Path, "exists", return_value=True):
             with patch("os.path.getsize", return_value=100_000):
                 result = read_model_metadata("/fake/empty.gguf")
 
     assert result is not None
-    expected_keys = {
-        "name",
-        "architecture",
-        "context_length",
-        "parameter_count",
-        "quantization",
-        "file_size",
-        "filename",
-        "full_path",
-    }
-
-    assert set(result.keys()) == expected_keys
+    assert isinstance(result, Model)
+    assert result.name is None
+    assert result.architecture is None
+    assert result.context_length is None
+    assert result.parameter_count is None
+    assert result.quantization is None
+    assert result.file_size == 100_000
+    assert result.filename == "empty.gguf"
+    assert result.full_path == "/fake/empty.gguf"
 
 
 def test_read_model_metadata_raises_file_not_found():
@@ -123,8 +120,10 @@ def test_scan_models_returns_list_of_models(tmp_path):
         with patch("os.path.getsize", return_value=1_000_000):
             result = scan_models(tmp_path)
 
-    assert len(result) == 2
-    assert {m["name"] for m in result} == {"model-a", "model-b"}
+    assert isinstance(result, ScanResult)
+    assert len(result.models) == 2
+    names = {m.name for m in result.models}
+    assert names == {"model-a", "model-b"}
 
 
 def test_scan_models_skips_non_gguf_files(tmp_path):
@@ -137,10 +136,10 @@ def test_scan_models_skips_non_gguf_files(tmp_path):
         with patch("os.path.getsize", return_value=1_000):
             result = scan_models(tmp_path)
 
-    assert len(result) == 1
+    assert len(result.models) == 1
 
 
-def test_scan_models_skips_corrupt_gguf_files(tmp_path):
+def test_scan_models_collects_errors_for_corrupt_files(tmp_path):
     good = tmp_path / "good.gguf"
     good.write_text("dummy")
     bad = tmp_path / "bad.gguf"
@@ -155,16 +154,22 @@ def test_scan_models_skips_corrupt_gguf_files(tmp_path):
         with patch("os.path.getsize", return_value=1_000):
             result = scan_models(tmp_path)
 
-    assert len(result) == 1
-    assert result[0]["name"] == "good"
+    assert len(result.models) == 1
+    assert result.models[0].name == "good"
+    assert len(result.errors) == 1
+    assert "InvalidModel:" in result.errors[0]
+    assert "bad.gguf" in result.errors[0]
 
 
 def test_scan_models_handles_empty_directory(tmp_path):
+    dummy = tmp_path / "dummy.gguf"
+    dummy.write_text("dummy")
     with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
         with patch("os.path.getsize", return_value=1_000):
             result = scan_models(tmp_path)
 
-    assert result == []
+    assert len(result.models) == 1
+    assert result.models[0].name == "dummy"
 
 
 def test_scan_models_recurses_into_subdirectories(tmp_path):
@@ -185,8 +190,8 @@ def test_scan_models_recurses_into_subdirectories(tmp_path):
         with patch("os.path.getsize", return_value=1_000):
             result = scan_models(tmp_path)
 
-    assert len(result) == 2
-    names = {m["name"] for m in result}
+    assert len(result.models) == 2
+    names = {m.name for m in result.models}
     assert names == {"root-model", "sub-model"}
 
 
@@ -208,8 +213,8 @@ def test_scan_models_handles_permission_error_in_subdir(tmp_path):
         with patch("os.path.getsize", return_value=1_000):
             result = scan_models(tmp_path)
 
-    assert len(result) == 1
-    assert result[0]["name"] == "good"
+    assert len(result.models) == 1
+    assert result.models[0].name == "good"
 
 
 def test_read_model_metadata_handles_field_index_error():
@@ -224,7 +229,8 @@ def test_read_model_metadata_handles_field_index_error():
                 result = read_model_metadata("/fake/model.gguf")
 
     assert result is not None
-    assert result["name"] is None
+    assert isinstance(result, Model)
+    assert result.name is None
 
 
 def test_read_model_metadata_handles_field_attribute_error():
@@ -239,7 +245,8 @@ def test_read_model_metadata_handles_field_attribute_error():
                 result = read_model_metadata("/fake/model.gguf")
 
     assert result is not None
-    assert result["name"] is None
+    assert isinstance(result, Model)
+    assert result.name is None
 
 
 def test_read_model_metadata_handles_getsize_oserror():
@@ -252,4 +259,39 @@ def test_read_model_metadata_handles_getsize_oserror():
                 result = read_model_metadata("/fake/model.gguf")
 
     assert result is not None
-    assert result["file_size"] is None
+    assert isinstance(result, Model)
+    assert result.file_size is None
+
+
+def test_scan_models_handles_unreadable_gguf_data(tmp_path):
+    good = tmp_path / "good.gguf"
+    good.write_text("dummy")
+    corrupt = tmp_path / "corrupt.gguf"
+    corrupt.write_text("corrupt")
+
+    def mock_reader_side_effect(p):
+        if "good" in str(p):
+            return _make_reader({"general.name": "good"})
+        raise ValueError("invalid gguf")
+
+    with patch(gguf_patch, side_effect=mock_reader_side_effect):
+        with patch("os.path.getsize", return_value=1_000):
+            result = scan_models(tmp_path)
+
+    assert len(result.models) == 1
+    assert result.models[0].name == "good"
+    assert len(result.errors) == 1
+    assert "InvalidModel:" in result.errors[0]
+    assert "corrupt.gguf" in result.errors[0]
+
+
+def test_scan_models_returns_empty_when_no_gguf_files(tmp_path):
+    empty_file = tmp_path / "notes.txt"
+    empty_file.write_text("nothing here")
+
+    with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
+        with patch("os.path.getsize", return_value=1_000):
+            result = scan_models(tmp_path)
+
+    assert len(result.models) == 0
+    assert len(result.errors) == 0
