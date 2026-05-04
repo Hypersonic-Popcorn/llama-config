@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useApi } from "@/hooks/useApi";
+import ConfigPreviewModal from "@/components/ConfigPreviewModal";
 
 export default function ConfigPage() {
   const [config, setConfig] = useState(null);
@@ -86,65 +87,13 @@ export default function ConfigPage() {
 
       {previewOpen && (
         <ConfigPreviewModal
-          config={form}
+          config={config}
+          newConfig={form}
           validationResult={validationResult}
           onClose={() => setPreviewOpen(false)}
           onApply={handleApply}
         />
       )}
-    </div>
-  );
-}
-
-function ConfigPreviewModal({ config, validationResult, onClose, onApply }) {
-  const [activeTab, setActiveTab] = useState("summary");
-
-  if (validationResult?.error) {
-    return (
-      <div className="modal-overlay">
-        <div className="modal-dialog">
-          <h3>Validation Error</h3>
-          <p className="error-text">{validationResult.error}</p>
-          <div className="modal-footer">
-            <button type="button" onClick={onClose}>Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const yamlString = JSON.stringify(config, null, 2);
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-dialog">
-        <h3>Config Preview</h3>
-
-        <div className="modal-tabs">
-          <button type="button" onClick={() => setActiveTab("summary")}>Summary</button>
-          <button type="button" onClick={() => setActiveTab("config")}>Full Config</button>
-        </div>
-
-        {activeTab === "summary" && (
-          <div className="modal-body">
-            <p className="text-success">+ New config generated</p>
-            <p className="text-loading">No changes detected yet.</p>
-          </div>
-        )}
-
-        {activeTab === "config" && (
-          <pre className="modal-body">
-            {yamlString}
-          </pre>
-        )}
-
-        <div className="modal-footer">
-          <button type="button" onClick={onClose}>Cancel</button>
-          <button type="button" onClick={onApply} className="btn btn-apply">
-            Apply
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

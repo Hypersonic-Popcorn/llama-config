@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useApi } from "@/hooks/useApi";
+import ConfigPreviewModal from "@/components/ConfigPreviewModal";
 
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
@@ -9,6 +10,7 @@ export default function ModelsPage() {
   const [form, setForm] = useState({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [previewConfig, setPreviewConfig] = useState(null);
   const [error, setError] = useState(null);
   const { execute } = useApi();
 
@@ -47,7 +49,6 @@ export default function ModelsPage() {
   };
 
   const openPreview = async () => {
-    setPreviewOpen(true);
     const previewConfig = {
       ...(config || {}),
       models: {
@@ -55,11 +56,18 @@ export default function ModelsPage() {
         [selected.name]: form,
       },
     };
+    setPreviewConfig(previewConfig);
+    setPreviewOpen(true);
     try {
       const res = await execute(api.post("/config/validate", previewConfig));
       setValidationResult(res.data);
     } catch (err) {
-      setValidationResult({ error: err.response?.data || "Validation failed" });
+      const errData = err.response?.data;
+      if (errData && 'valid' in errData) {
+        setValidationResult(errData);
+      } else {
+        setValidationResult({ error: errData || "Validation failed" });
+      }
     }
   };
 
@@ -115,12 +123,12 @@ export default function ModelsPage() {
           </div>
 
           {previewOpen && (
-            <ModelsPreviewModal
+            <ConfigPreviewModal
               config={config}
-              modelName={selected.name}
-              form={form}
+              newConfig={previewConfig}
               validationResult={validationResult}
               onClose={() => setPreviewOpen(false)}
+              title={`Preview — ${selected.name}`}
             />
           )}
         </div>
@@ -131,30 +139,4 @@ export default function ModelsPage() {
   );
 }
 
-function ModelsPreviewModal({ config, modelName, form, validationResult, onClose }) {
-  const previewConfig = {
-    ...(config || {}),
-    models: {
-      ...(config?.models || {}),
-      [modelName]: form,
-    },
-  };
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-dialog">
-        <h3>Config Preview</h3>
-        {validationResult?.error ? (
-          <p className="error-text">{validationResult.error}</p>
-        ) : (
-          <pre className="modal-body">
-            {JSON.stringify(previewConfig, null, 2)}
-          </pre>
-        )}
-        <div className="modal-footer">
-          <button type="button" onClick={onClose}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}

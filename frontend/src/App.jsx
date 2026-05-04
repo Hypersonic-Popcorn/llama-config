@@ -1,12 +1,12 @@
 import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
-import ConfigPage from "@/pages/ConfigPage";
-import ModelsPage from "@/pages/ModelsPage";
-import DockerPage from "@/pages/DockerPage";
-import LogsPage from "@/pages/LogsPage";
-import { useStaleConfig } from "@/hooks/useStaleConfig";
-import { DarkModeProvider } from "@/hooks/useDarkMode";
+import Sidebar from "@/components/Sidebar.jsx";
+import TopBar from "@/components/TopBar.jsx";
+import ConfigPage from "@/pages/ConfigPage.jsx";
+import ModelsPage from "@/pages/ModelsPage.jsx";
+import DockerPage from "@/pages/DockerPage.jsx";
+import LogsPage from "@/pages/LogsPage.jsx";
+import { useStaleConfig } from "@/hooks/useStaleConfig.js";
+import { DarkModeProvider } from "@/hooks/useDarkMode.jsx";
 import "@/index.css";
 
 const PAGE_TITLES = {

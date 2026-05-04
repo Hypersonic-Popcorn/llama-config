@@ -462,3 +462,64 @@ body {
   font-size: 12px;
   font-family: monospace;
 }
+
+.modal-tabs {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.modal-tabs button {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-tabs button.tab-active {
+  background: var(--color-active-bg);
+  border-color: var(--color-active-border);
+}
+
+.modal-body-code {
+  padding: 0;
+}
+
+.diff-add {
+  background: rgba(46, 204, 113, 0.2);
+  color: var(--color-fg);
+}
+
+.diff-del {
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--color-fg);
+}
+
+.diff-context {
+  color: var(--color-fg);
+}
+
+.text-muted {
+  color: var(--color-gray);
+}
+
+.cm-editor {
+  background: var(--color-pre-bg) !important;
+  color: var(--color-fg) !important;
+}
+
+.cm-line {
+  font-size: 12px !important;
+  font-family: monospace !important;
+}
+
+.cm-gutters {
+  background: var(--color-pre-bg) !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.cm-fold-gutter {
+  color: var(--color-fg);
+}
