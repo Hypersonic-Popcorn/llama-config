@@ -3,19 +3,14 @@ import api from "@/api/client";
 
 export default function LogsPage() {
   const [containerLogs, setContainerLogs] = useState("");
-  const [swapLogs, setSwapLogs] = useState("");
   const [isAutoRefresh, setIsAutoRefresh] = useState(false);
   const [delay, setDelay] = useState(5000);
   const [error, setError] = useState(null);
 
   const fetchLogs = async () => {
     try {
-      const [containerRes, swapRes] = await Promise.all([
-        api.get("/docker/logs"),
-        api.get("/docker/llama-swap-logs"),
-      ]);
-      setContainerLogs(containerRes.data?.logs?.join("\n") || "");
-      setSwapLogs(swapRes.data || "");
+      const res = await api.get("/docker/logs");
+      setContainerLogs(res.data?.logs?.join("\n") || "");
       setError(null);
     } catch {
       setError("‼️ Backend unavailable");
@@ -25,12 +20,8 @@ export default function LogsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [containerRes, swapRes] = await Promise.all([
-          api.get("/docker/logs"),
-          api.get("/docker/llama-swap-logs"),
-        ]);
-        setContainerLogs(containerRes.data?.logs?.join("\n") || "");
-        setSwapLogs(swapRes.data || "");
+        const res = await api.get("/docker/logs");
+        setContainerLogs(res.data?.logs?.join("\n") || "");
         setError(null);
       } catch {
         setError("‼️ Backend unavailable");
@@ -74,21 +65,12 @@ export default function LogsPage() {
         <button type="button" onClick={fetchLogs}>Refresh</button>
       </div>
 
-      <div className="log-panels">
-        <div className="log-panel">
+      <div className="log-panel">
           <strong>Container Logs</strong>
           <pre className="log-output">
             {containerLogs || "(no logs)"}
           </pre>
         </div>
-
-        <div className="log-panel">
-          <strong>llama-swap Logs</strong>
-          <pre className="log-output">
-            {swapLogs || "(no logs)"}
-          </pre>
-        </div>
-      </div>
     </div>
   );
 }
