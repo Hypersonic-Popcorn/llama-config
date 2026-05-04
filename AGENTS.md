@@ -38,6 +38,12 @@ This traces the command and shows what paths would need to be allowed. The user
 must update the nono script themselves — never attempt to modify the sandbox
 configuration directly.
 
+## Frontend Development
+
+- **Vite server**: The user must start/stop the Vite dev server manually. Run `./dev_tools/start_vite.sh` from the project root.
+- **Accessing the app**: Once running, the dev server is available at `http://localhost:5173/` and via Tailscale at `http://100.78.106.18:5173/`.
+- **Errors**: If the user reports a blank page, ask them to check the browser devtools console for JavaScript errors.
+
 ## Coding conventions
 
 When working with Python code, read and follow: @rules/python.md
