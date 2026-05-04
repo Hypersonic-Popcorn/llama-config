@@ -244,11 +244,11 @@ class TestDockerRoutes:
         assert resp.json()["success"] is True
 
     def test_llama_swap_logs(self, client):
-        with patch("src.api.docker_routes.exec_in_container", return_value=(0, "some logs here")):
+        with patch("src.api.docker_routes.get_container_stdout_logs", return_value=["some logs here"]):
             resp = client.get("/api/docker/llama-swap-logs")
 
         assert resp.status_code == 200
-        assert "some logs here" in resp.json()
+        assert resp.json() == {"logs": ["some logs here"]}
 
 
 class TestOptionsRoutes:

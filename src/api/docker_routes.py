@@ -7,6 +7,7 @@ from src.core.docker_manager import (
     container_is_running,
     restart_container,
     get_logs,
+    get_container_stdout_logs,
     get_container,
     exec_in_container,
 )
@@ -66,13 +67,10 @@ def docker_logs(tail: int = 100):
 @router.get("/llama-swap-logs")
 def llama_swap_logs(tail: int = 100):
     try:
-        cmd = f"docker logs --tail {tail} llama-swap 2>&1"
-        exit_code, stdout = exec_in_container(cmd, user="ubuntu")
-        if exit_code == 0:
-            return stdout.strip()
-        return f"Failed to fetch logs (exit code: {exit_code})"
-    except Exception as e:
-        return f"Error: {e}"
+        logs = get_container_stdout_logs(tail=tail)
+        return {"logs": logs}
+    except ContainerNotRunning:
+        return {"logs": ["Container not running"]}
 
 
 @router.get("/health", response_model=dict)

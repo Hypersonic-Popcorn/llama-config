@@ -74,3 +74,12 @@ def get_logs(tail: int = 100) -> list[str]:
         return result.decode("utf-8").splitlines()
     except (NotFound, APIError):
         raise ContainerNotRunning("logs failed")
+
+
+def get_container_stdout_logs(tail: int = 100) -> list[str]:
+    container = _ensure_container_running()
+    try:
+        result = container.logs(tail=tail, stderr=False)  # type: ignore
+        return result.decode("utf-8").splitlines()
+    except (NotFound, APIError):
+        raise ContainerNotRunning("logs failed")
