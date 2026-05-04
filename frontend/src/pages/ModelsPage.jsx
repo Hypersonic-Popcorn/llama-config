@@ -21,7 +21,7 @@ export default function ModelsPage() {
         setModels(modelsRes.data || []);
         setConfig(configRes.data || {});
       } catch {
-        setError("‼️ Backend unavailable");
+        setError("Backend unavailable");
       }
     };
     fetchData();
@@ -29,37 +29,42 @@ export default function ModelsPage() {
 
   const selectModel = (model) => {
     setSelected(model);
-    if (config?.models?.[model.name]) {
-      setForm({ ...config.models[model.name] });
-    } else {
-      setForm({});
-    }
+    setForm({ ...(config?.models?.[model.name] || {}) });
+  };
+
+  const handleToggle = (model) => {
+    setConfig((prev) => {
+      const models = { ...(prev?.models || {}) };
+      if (models[model.name]) {
+        delete models[model.name];
+      } else {
+        models[model.name] = {};
+      }
+      return { ...prev, models };
+    });
   };
 
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleAddConfig = () => {
-    setConfig((prev) => ({
-      ...prev,
-      models: { ...(prev?.models || {}), [selected.name]: { ...form } },
-    }));
-    setForm({});
-  };
-
   const openPreview = async () => {
-    const previewConfig = {
+    const newConfig = {
       ...(config || {}),
-      models: {
-        ...(config?.models || {}),
-        [selected.name]: form,
-      },
+      models: { ...(config?.models || {}) },
     };
-    setPreviewConfig(previewConfig);
+    if (form && Object.keys(form).length > 0 && selected) {
+      const existing = newConfig.models[selected.name];
+      if (existing) {
+        Object.assign(existing, form);
+      } else {
+        newConfig.models[selected.name] = { ...form };
+      }
+    }
+    setPreviewConfig(newConfig);
     setPreviewOpen(true);
     try {
-      const res = await execute(api.post("/config/validate", previewConfig));
+      const res = await execute(api.post("/config/validate", newConfig));
       setValidationResult(res.data);
     } catch (err) {
       const errData = err.response?.data;
@@ -89,8 +94,17 @@ export default function ModelsPage() {
               onClick={() => selectModel(m)}
               className={`model-item${isSelected ? " selected" : ""}`}
             >
+              <input
+                type="checkbox"
+                checked={!!isConfigured}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleToggle(m);
+                }}
+                className="model-toggle"
+              />
               <span className={`model-dot${isSelected ? " selected" : isConfigured ? " configured" : ""}`} />
-              {m.name}
+              {m.filename}
             </div>
           );
         })}
@@ -98,28 +112,35 @@ export default function ModelsPage() {
 
       {selected && (
         <div className="model-detail">
-          <h3>{selected.name}</h3>
+          <h3>{selected.name || selected.filename}</h3>
           <div className="meta-row">
             <div><strong>Size:</strong> {selected.size}</div>
             <div><strong>Quant:</strong> {selected.quant}</div>
           </div>
 
-          <h4>llama-server options</h4>
-          <div className="form-list">
-            {Object.keys(form || {}).map((key) => (
-              <label key={key} className="form-field">
-                <strong>{key}</strong>
-                <input
-                  value={form[key] ?? ""}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                />
-              </label>
-            ))}
-          </div>
+          {Object.keys(form || {}).length > 0 && (
+            <>
+              <h4>llama-server options</h4>
+              <div className="form-list">
+                {Object.keys(form).map((key) => (
+                  <label key={key} className="form-field">
+                    <strong>{key}</strong>
+                    <input
+                      value={form[key] ?? ""}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+
+          {Object.keys(form || {}).length === 0 && (
+            <p className="model-untoggled">Toggle this model to add it to config, then set options below.</p>
+          )}
 
           <div className="form-actions">
-            <button type="button" onClick={handleAddConfig}>Add to Config</button>
-            <button type="button" onClick={openPreview} disabled={Object.keys(form).length === 0}>Validate & Preview</button>
+            <button type="button" onClick={openPreview} disabled={!config?.models?.[selected.name] && Object.keys(form || {}).length === 0}>Validate & Preview</button>
           </div>
 
           {previewOpen && (
@@ -128,7 +149,7 @@ export default function ModelsPage() {
               newConfig={previewConfig}
               validationResult={validationResult}
               onClose={() => setPreviewOpen(false)}
-              title={`Preview — ${selected.name}`}
+              title={`Preview — ${selected.filename}`}
             />
           )}
         </div>
@@ -138,5 +159,3 @@ export default function ModelsPage() {
     </div>
   );
 }
-
-
