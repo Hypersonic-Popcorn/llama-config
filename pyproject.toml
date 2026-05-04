@@ -12,6 +12,8 @@ dependencies = [
     "types-docker>=7.1.0.20260409",
     "gguf>=0.18.0",
     "httpx>=0.28.1",
+    "fastapi>=0.136.1",
+    "uvicorn[standard]>=0.46.0",
 ]
 
 [dependency-groups]
