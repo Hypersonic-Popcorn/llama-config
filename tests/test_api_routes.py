@@ -68,7 +68,7 @@ class TestConfigRoutes:
         resp = client.get("/api/config")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["config"] == VALID_CONFIG
+        assert data == VALID_CONFIG
 
     def test_save_config_valid(
         self, client, mock_validate, mock_write, mock_restart, mock_health
@@ -90,7 +90,22 @@ class TestConfigRoutes:
         result.add_warning("logLevel is not set")
 
         with patch("src.api.config_routes.validate_config", return_value=result):
-            resp = client.post("/api/config", json={"config": {}, "label": "test"})
+            with patch("src.api.config_routes.write_config"):
+                resp = client.post("/api/config", json={"config": {}, "label": "test"})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["valid"] is False
+        assert "Missing models" in data["errors"]
+
+    def test_validate_config(self, client):
+        from src.core.validator import ValidationResult
+
+        result = ValidationResult(valid=False)
+        result.add_error("Missing models")
+
+        with patch("src.api.config_routes.validate_config", return_value=result):
+            resp = client.post("/api/config/validate", json={"config": {}, "label": "test"})
 
         assert resp.status_code == 200
         data = resp.json()
@@ -163,7 +178,9 @@ class TestModelRoutes:
 
         result = ScanResult(
             models=[
-                Model(name="test", filename="test.gguf", full_path="/models/test.gguf")
+                Model(name="test", filename="test.gguf", full_path="/models/test.gguf",
+                      architecture="llama", context_length=4096, parameter_count="7B",
+                      quantization="Q4_0", file_size=1234567)
             ],
             errors=[],
         )
@@ -172,8 +189,8 @@ class TestModelRoutes:
 
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data["models"]) == 1
-        assert data["models"][0]["name"] == "test"
+        assert len(data) == 1
+        assert data[0]["name"] == "test"
 
 
 class TestDockerRoutes:
@@ -182,7 +199,7 @@ class TestDockerRoutes:
             resp = client.get("/api/docker/status")
 
         assert resp.status_code == 200
-        assert resp.json()["running"] is True
+        assert resp.json() == "RUNNING"
 
     def test_restart(self, client):
         with patch("src.api.docker_routes.restart_container"):
@@ -209,6 +226,29 @@ class TestDockerRoutes:
 
         assert resp.status_code == 200
         assert resp.json()["healthy"] is True
+
+    def test_start(self, client):
+        mock_container = MagicMock()
+        with patch("src.api.docker_routes.get_container", return_value=mock_container):
+            resp = client.post("/api/docker/start")
+
+        assert resp.status_code == 200
+        assert resp.json()["success"] is True
+
+    def test_stop(self, client):
+        mock_container = MagicMock()
+        with patch("src.api.docker_routes.get_container", return_value=mock_container):
+            resp = client.post("/api/docker/stop")
+
+        assert resp.status_code == 200
+        assert resp.json()["success"] is True
+
+    def test_llama_swap_logs(self, client):
+        with patch("src.api.docker_routes.exec_in_container", return_value=(0, "some logs here")):
+            resp = client.get("/api/docker/llama-swap-logs")
+
+        assert resp.status_code == 200
+        assert "some logs here" in resp.json()
 
 
 class TestOptionsRoutes:

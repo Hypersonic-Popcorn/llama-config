@@ -5,14 +5,11 @@ import httpx
 from fastapi import APIRouter
 
 from src.api.models import (
-    BackupList,
     BackupItem,
-    ConfigResponse,
-    RefreshResponse,
     ValidateRequest,
     ValidateResponse,
 )
-from src.core.docker_manager import restart_container, get_container
+from src.core.docker_manager import restart_container
 from src.core.yaml_handler import (
     read_config,
     write_config,
@@ -29,13 +26,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("", response_model=ConfigResponse)
+@router.get("")
 def get_config():
-    config = read_config()
-    return ConfigResponse(config=config)
+    return read_config()
 
 
-@router.post("", response_model=ValidateResponse)
+@router.post("")
 async def save_config(request: ValidateRequest):
     result = validate_config(request.config)
     if not result.valid:
@@ -70,7 +66,19 @@ async def save_config(request: ValidateRequest):
     return ValidateResponse(valid=True, errors=[], warnings=[])
 
 
-@router.get("/backups", response_model=BackupList)
+@router.post("/validate")
+def validate_config_endpoint(request: ValidateRequest):
+    result = validate_config(request.config)
+    if not result.valid:
+        return ValidateResponse(
+            valid=False,
+            errors=result.errors,
+            warnings=result.warnings,
+        )
+    return ValidateResponse(valid=True, errors=result.warnings, warnings=[])
+
+
+@router.get("/backups")
 def get_backups():
     backup_list = list_backups()
     items = [
@@ -81,7 +89,7 @@ def get_backups():
         )
         for b in backup_list
     ]
-    return BackupList(backups=items)
+    return {"backups": items}
 
 
 @router.post("/restore/{backup_id}")

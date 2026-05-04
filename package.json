@@ -1,5 +1,11 @@
 {
   "devDependencies": {
     "vite": "^8.0.10"
+  },
+  "dependencies": {
+    "@uiw/react-codemirror": "^4.25.9",
+    "axios": "^1.16.0",
+    "diff": "^9.0.0",
+    "react-router-dom": "^7.14.2"
   }
 }

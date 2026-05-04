@@ -7,6 +7,8 @@ from src.core.docker_manager import (
     container_is_running,
     restart_container,
     get_logs,
+    get_container,
+    exec_in_container,
 )
 from src.settings import settings
 from src.custom_exceptions import ContainerNotRunning
@@ -16,9 +18,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/status", response_model=dict)
+@router.get("/status")
 def docker_status():
-    return {"running": container_is_running()}
+    if container_is_running():
+        return "RUNNING"
+    return "STOPPED"
+
+
+@router.post("/start")
+def docker_start():
+    try:
+        container = get_container()
+        container.start()  # type: ignore
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@router.post("/stop")
+def docker_stop():
+    try:
+        container = get_container()
+        container.stop()  # type: ignore
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 
 @router.post("/restart", response_model=dict)
@@ -37,6 +61,18 @@ def docker_logs(tail: int = 100):
         return {"logs": logs}
     except ContainerNotRunning:
         return {"logs": ["Container not running"]}
+
+
+@router.get("/llama-swap-logs")
+def llama_swap_logs(tail: int = 100):
+    try:
+        cmd = f"docker logs --tail {tail} llama-swap 2>&1"
+        exit_code, stdout = exec_in_container(cmd, user="ubuntu")
+        if exit_code == 0:
+            return stdout.strip()
+        return f"Failed to fetch logs (exit code: {exit_code})"
+    except Exception as e:
+        return f"Error: {e}"
 
 
 @router.get("/health", response_model=dict)
