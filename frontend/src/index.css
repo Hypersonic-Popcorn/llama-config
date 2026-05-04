@@ -16,6 +16,7 @@
   --color-active-bg: rgba(0, 0, 0, 0.08);
   --color-active-border: #0366d6;
   --color-stale: #b8860b;
+  --color-stopped: #888;
   --color-blue: #0366d6;
   --color-blue-light: #4a90d4;
   --color-amber: #d4a843;
@@ -51,7 +52,8 @@
   --color-loading: #888;
   --color-active-bg: rgba(255, 255, 255, 0.1);
   --color-active-border: #4a90d4;
-  --color-stale: #d4a843;
+ --color-stale: #d4a843;
+  --color-stopped: #888;
   --color-blue: #4a90d4;
   --color-blue-light: #4a90d4;
   --color-amber: #d4a843;
@@ -407,6 +409,14 @@ body {
 }
 
 .status-stopped {
+  color: var(--color-stopped);
+}
+
+.status-stale {
+  color: var(--color-stale);
+}
+
+.status-error {
   color: var(--color-error);
 }
 
@@ -522,4 +532,23 @@ body {
 
 .cm-fold-gutter {
   color: var(--color-fg);
+}
+
+.error-lines {
+  margin-top: 16px;
+}
+
+.error-lines strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.error-output {
+  background: var(--color-pre-bg);
+  padding: 8px;
+  max-height: 400px;
+  overflow: auto;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--color-error);
 }
