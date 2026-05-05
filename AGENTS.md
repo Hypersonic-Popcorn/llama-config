@@ -13,6 +13,24 @@ uv run basedpyright
   - Code is formatted (`uv run black --target-version "py312" .`)
   - Type checking passes (`uv run basedpyright`)
 
+## Single command start
+
+To start backend + frontend together from any directory:
+
+```bash
+uv run app
+```
+
+Or from the project root:
+
+```bash
+uv run src.app
+```
+
+Use `-h`/`--help` to see available arguments for overriding settings.
+`llama-config.yaml` is created in the current directory on first run and
+persists your settings between invocations.
+
 ## Architecture
 
 For frontend,read and follow: @plan_frontend.md
@@ -45,8 +63,7 @@ configuration directly.
 
 ## Frontend Development
 
-- **Vite server**: The user must start/stop the Vite dev server manually. Run `./dev_tools/start_vite.sh` from the project root.
-- **Accessing the app**: Once running, the dev server is available at `http://localhost:5173/` and via Tailscale at `http://100.78.106.18:5173/`.
+- **Accessing the app**: Available at `http://localhost:5173/` and via Tailscale at `http://100.78.106.18:5173/`.
 - **Errors**: If the user reports a blank page, ask them to check the browser devtools console for JavaScript errors.
 
 ## Coding conventions

@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn[standard]>=0.46.0",
 ]
 
+[project.scripts]
+app = "src.app:main"
+
 [dependency-groups]
 dev = [
     "basedpyright>=1.39.3",

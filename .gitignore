@@ -38,6 +38,9 @@ local_test/
 # Scanned models cache (machine-specific)
 scanned_models.yaml
 
+# Persistent settings (machine-specific)
+llama-config.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
