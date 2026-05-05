@@ -23,14 +23,25 @@ if not os.environ.get("TESTING"):
         {
             "name": m.name,
             "architecture": m.architecture,
+            "basename": m.basename,
             "context_length": m.context_length,
             "parameter_count": m.parameter_count,
-            "quantization": m.quantization,
+            "quantization": m.quantization_version,
+            "quantization_version": m.quantization_version,
+            "finetune": m.finetune,
+            "license": m.license,
+            "license_link": m.license_link,
+            "sampling_temp": m.sampling_temp,
+            "sampling_top_k": m.sampling_top_k,
+            "sampling_top_p": m.sampling_top_p,
+            "size_label": m.size_label,
+            "model_type": m.model_type,
+            "block_count": m.block_count,
             "file_size": m.file_size,
             "filename": m.filename,
             "full_path": m.full_path,
             "size": m.file_size,
-            "quant": m.quantization,
+            "quant": m.quantization_version,
         }
         for m in _models.models
     ]

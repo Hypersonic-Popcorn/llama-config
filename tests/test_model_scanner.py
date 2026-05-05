@@ -14,12 +14,42 @@ def _make_reader(field_values: dict | None = None):  # pyright: ignore
     if field_values is None:
         reader.get_field.return_value = None
     else:
+        from gguf import GGUFValueType
+
+        def _make_parts(val):
+            parts = []
+            if isinstance(val, str):
+                val_type = GGUFValueType.STRING.value
+                p2 = MagicMock()
+                p2.__getitem__.return_value = val_type
+                parts = [
+                    len(val.encode("utf-8")),
+                    MagicMock(),
+                    p2,
+                    None,
+                    val.encode("utf-8"),
+                ]
+            elif isinstance(val, float):
+                val_type = GGUFValueType.FLOAT64.value
+                p2 = MagicMock()
+                p2.__getitem__.return_value = val_type
+                p3 = MagicMock()
+                p3.__getitem__.return_value = val
+                parts = [MagicMock(), MagicMock(), p2, p3]
+            else:
+                val_type = GGUFValueType.INT32.value if -2**31 <= val < 2**31 else GGUFValueType.INT64.value
+                p2 = MagicMock()
+                p2.__getitem__.return_value = val_type
+                p3 = MagicMock()
+                p3.__getitem__.return_value = val
+                parts = [MagicMock(), MagicMock(), p2, p3]
+            return parts
 
         def get_field(key):
             val = field_values.get(key)
             if val is not None:
                 field = MagicMock()
-                field.contents.return_value = val
+                field.parts = _make_parts(val)
                 return field
             return None
 
@@ -48,7 +78,7 @@ def test_read_model_metadata_returns_metadata():
     assert result.architecture == "llama"
     assert result.context_length == 4096
     assert result.parameter_count == 6_738_000_000
-    assert result.quantization == 2
+    assert result.quantization_version == 2
     assert result.file_size == 4_200_000_000
     assert result.filename == "model.gguf"
     assert result.full_path == "/fake/model.gguf"
@@ -66,7 +96,7 @@ def test_read_model_metadata_returns_model_with_none_fields():
     assert result.architecture is None
     assert result.context_length is None
     assert result.parameter_count is None
-    assert result.quantization is None
+    assert result.quantization_version is None
     assert result.file_size == 100_000
     assert result.filename == "empty.gguf"
     assert result.full_path == "/fake/empty.gguf"
@@ -220,7 +250,12 @@ def test_scan_models_handles_permission_error_in_subdir(tmp_path):
 def test_read_model_metadata_handles_field_index_error():
     reader = MagicMock()
     field = MagicMock()
-    field.contents.side_effect = IndexError("out of bounds")
+    parts = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+    parts[2] = 0  # INT32 type
+    parts[3] = MagicMock()
+    parts[3].__getitem__ = lambda self, i: 0
+    field.parts = parts
+    field.parts[3].__getitem__.side_effect = IndexError("out of bounds")
     reader.get_field.return_value = field
 
     with patch(gguf_patch, return_value=reader):
@@ -236,7 +271,12 @@ def test_read_model_metadata_handles_field_index_error():
 def test_read_model_metadata_handles_field_attribute_error():
     reader = MagicMock()
     field = MagicMock()
-    field.contents.side_effect = AttributeError("bad field")
+    parts = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+    parts[2] = 0
+    parts[3] = MagicMock()
+    parts[3].__getitem__ = lambda self, i: 0
+    field.parts = parts
+    field.parts[3].__getitem__.side_effect = AttributeError("bad field")
     reader.get_field.return_value = field
 
     with patch(gguf_patch, return_value=reader):

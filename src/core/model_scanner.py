@@ -3,11 +3,40 @@ import os
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
+
 import gguf
+from gguf import GGUFValueType
 
 from src.core.model import Model, ScanResult
 
 logger = logging.getLogger(__name__)
+
+
+def _get_field_value(reader: gguf.GGUFReader, key: str) -> Any:
+    field_obj = reader.get_field(key)
+    if field_obj is None:
+        return None
+    parts = field_obj.parts
+    val_type = int(parts[2][0])
+
+    if val_type == GGUFValueType.STRING.value:
+        return bytes(parts[4]).decode("utf-8")
+    if val_type == GGUFValueType.FLOAT32.value:
+        return float(np.frombuffer(bytes(parts[3]), dtype="float32")[0])
+    if val_type == GGUFValueType.FLOAT64.value:
+        return float(np.frombuffer(bytes(parts[3]), dtype="float64")[0])
+    if val_type == GGUFValueType.INT32.value:
+        return int(parts[3][0])
+    if val_type == GGUFValueType.UINT32.value:
+        return int(parts[3][0])
+    if val_type == GGUFValueType.UINT64.value:
+        return int(parts[3][0])
+    if val_type == GGUFValueType.INT64.value:
+        return int(parts[3][0])
+    if val_type == GGUFValueType.BOOL.value:
+        return bool(int(bytes(parts[3])[0]))
+    return None
 
 
 def read_model_metadata(path: str | Path) -> Model | None:
@@ -18,7 +47,7 @@ def read_model_metadata(path: str | Path) -> Model | None:
 
     try:
         reader = gguf.GGUFReader(path)
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError):
         return None
 
     try:
@@ -26,21 +55,31 @@ def read_model_metadata(path: str | Path) -> Model | None:
     except OSError:
         file_size = None
 
-    def _get_field(key: str) -> Any:
-        field_obj = reader.get_field(key)
-        if field_obj is None:
-            return None
+    def get(key: str) -> Any:
         try:
-            return field_obj.contents(0)
-        except (IndexError, AttributeError):
+            return _get_field_value(reader, key)
+        except Exception:
             return None
 
+    arch = get("general.architecture")
+    ctx_len = get("general.context_length") or get(f"{arch}.context_length") if arch else None
+
     return Model(
-        name=cast(str | None, _get_field("general.name")),
-        architecture=cast(str | None, _get_field("general.architecture")),
-        context_length=cast(int | None, _get_field("llama.context_length")),
-        parameter_count=cast(int | None, _get_field("general.parameter_count")),
-        quantization=cast(int | None, _get_field("general.quantization_version")),
+        name=get("general.name"),
+        architecture=arch,
+        basename=get("general.basename"),
+        context_length=cast(int | None, ctx_len),
+        parameter_count=cast(int | None, get("general.parameter_count")),
+        quantization_version=cast(int | None, get("general.quantization_version")),
+        finetune=get("general.finetune"),
+        license=get("general.license"),
+        license_link=get("general.license.link"),
+        sampling_temp=cast(float | None, get("general.sampling.temp")),
+        sampling_top_k=cast(int | None, get("general.sampling.top_k")),
+        sampling_top_p=cast(float | None, get("general.sampling.top_p")),
+        size_label=get("general.size_label"),
+        model_type=get("general.type"),
+        block_count=cast(int | None, get(f"{arch}.block_count")) if arch else None,
         file_size=file_size,
         filename=path.name,
         full_path=str(path),
