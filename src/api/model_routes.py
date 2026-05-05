@@ -15,6 +15,7 @@ router = APIRouter()
 def list_models():
     return _models_cache
 
+
 # Scan once at module load time (backend startup)
 _models_cache = []
 if not os.environ.get("TESTING"):

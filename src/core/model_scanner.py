@@ -23,14 +23,18 @@ def _model_fields(model: Model) -> dict[str, Any]:
 
 def save_scanned_models(models: list[Model], errors: list[str]) -> None:
     with open(SCANNED_MODELS_PATH, "w") as f:
-        f.write(f"timestamp: \"{datetime.now(timezone.utc).isoformat()}\"\n")
+        f.write(f'timestamp: "{datetime.now(timezone.utc).isoformat()}"\n')
         f.write("models:\n")
         for m in models:
             fields = _model_fields(m)
-            f.write("  - {}\n".format(", ".join(
-                "{}: {}".format(k, repr(v) if isinstance(v, str) else v)
-                for k, v in fields.items()
-            )))
+            f.write(
+                "  - {}\n".format(
+                    ", ".join(
+                        "{}: {}".format(k, repr(v) if isinstance(v, str) else v)
+                        for k, v in fields.items()
+                    )
+                )
+            )
         if errors:
             f.write("errors:\n")
             for e in errors:
@@ -71,7 +75,9 @@ def load_scanned_models() -> tuple[list[Model], list[str], bool]:
                                 v = v.strip("''\"")
                             elif v.isdigit():
                                 v = int(v)
-                            elif v.startswith("0.") or (v.startswith("-") and not v.startswith("- ")):
+                            elif v.startswith("0.") or (
+                                v.startswith("-") and not v.startswith("- ")
+                            ):
                                 try:
                                     v = float(v)
                                 except ValueError:
@@ -137,7 +143,9 @@ def read_model_metadata(path: str | Path) -> Model | None:
             return None
 
     arch = get("general.architecture")
-    ctx_len = get("general.context_length") or get(f"{arch}.context_length") if arch else None
+    ctx_len = (
+        get("general.context_length") or get(f"{arch}.context_length") if arch else None
+    )
 
     return Model(
         name=get("general.name"),
