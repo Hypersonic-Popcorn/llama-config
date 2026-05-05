@@ -19,13 +19,13 @@ yaml.preserve_quotes = True
 
 def read_config() -> dict[str, Any]:  # type: ignore[return-type]
     try:
-        with open(settings.config_path, "r") as f:
+        with open(settings.config_file, "r") as f:
             data = yaml.load(f)
         if isinstance(data, dict):
             return data
         return {}
     except FileNotFoundError:
-        logger.error("Config file not found: %s", settings.config_path)
+        logger.error("Config file not found: %s", settings.config_file)
         return {}
     except (ParserError, ScannerError):
         logger.error("Failed to parse config YAML")
@@ -35,7 +35,7 @@ def read_config() -> dict[str, Any]:  # type: ignore[return-type]
 def write_config(data: dict[str, Any], label: str | None = None) -> None:
     try:
         _create_backup(data, label)
-        with open(settings.config_path, "w") as f:
+        with open(settings.config_file, "w") as f:
             yaml.dump(data, f)
         logger.info("Config written successfully")
     except PermissionError as e:
@@ -65,7 +65,7 @@ def restore_backup(backup_id: str) -> None:
     try:
         with open(backup_path, "rb") as f:
             data = f.read()
-        with open(settings.config_path, "wb") as f:
+        with open(settings.config_file, "wb") as f:
             f.write(data)
         logger.info("Restored backup: %s", backup_id)
     except FileNotFoundError:
@@ -96,7 +96,7 @@ def _create_backup(data: dict[str, Any], label: str | None = None) -> str:
         "backup_id": filename,
         "timestamp": datetime.now().isoformat(),
         "label": label,
-        "config_path": str(settings.config_path),
+        "config_path": str(settings.config_file),
     }
     history.append(entry)
     history_path = backup_dir / "backup_history.json"

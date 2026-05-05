@@ -19,7 +19,7 @@ def list_models():
 # Scan once at module load time (backend startup)
 _models_cache = []
 if not os.environ.get("TESTING"):
-    _models = scan_models(settings.model_directory)
+    _models = scan_models(settings.model_dir)
     _models_cache = [
         {
             "name": m.name,

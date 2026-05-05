@@ -55,15 +55,15 @@ def test_parse_args_with_values(monkeypatch):
 
 def test_load_settings_defaults(tmp_path):
     defaults = {
-        "config_path": "/default/config.yaml",
-        "model_directory": "/default/models",
+        "config_file": "/default/config.yaml",
+        "model_dir": "/default/models",
         "docker_container_name": "llama-swap",
         "backup_dir": "/default/backups",
         "docs_dir": "/default/docs",
         "health_check_url": "http://localhost:8080/v1/models",
         "health_check_timeout": 30,
         "health_check_interval": 2,
-        "log_file": "/default/logs",
+        "log_dir": "/default/logs",
     }
 
     yaml_path = tmp_path / "llama-config.yaml"
@@ -75,47 +75,47 @@ def test_load_settings_defaults(tmp_path):
                 with patch("yaml.dump"):
                     settings = load_settings(Namespace())
 
-    assert settings["config_path"] == "/default/config.yaml"
-    assert settings["model_directory"] == "/default/models"
+    assert settings["config_file"] == "/default/config.yaml"
+    assert settings["model_dir"] == "/default/models"
 
 
 def test_load_settings_from_yaml(tmp_path):
     defaults = {
-        "config_path": "/default/config.yaml",
-        "model_directory": "/default/models",
+        "config_file": "/default/config.yaml",
+        "model_dir": "/default/models",
         "docker_container_name": "llama-swap",
         "backup_dir": "/default/backups",
         "docs_dir": "/default/docs",
         "health_check_url": "http://localhost:8080/v1/models",
         "health_check_timeout": 30,
         "health_check_interval": 2,
-        "log_file": "/default/logs",
+        "log_dir": "/default/logs",
     }
-    file_data = {"config_path": "/yaml/config.yaml"}
+    file_data = {"config_file": "/yaml/config.yaml"}
 
     yaml_path = tmp_path / "llama-config.yaml"
-    yaml_path.write_text("config_path: /yaml/config.yaml\n")
+    yaml_path.write_text("config_file: /yaml/config.yaml\n")
 
     with patch("src.app._defaults", return_value=defaults):
         with patch("yaml.safe_load", return_value=file_data):
             with patch("yaml.dump"):
                 settings = load_settings(Namespace())
 
-    assert settings["config_path"] == "/yaml/config.yaml"
-    assert settings["model_directory"] == "/default/models"
+    assert settings["config_file"] == "/yaml/config.yaml"
+    assert settings["model_dir"] == "/default/models"
 
 
 def test_load_settings_cli_overrides(tmp_path):
     defaults = {
-        "config_path": "/default/config.yaml",
-        "model_directory": "/default/models",
+        "config_file": "/default/config.yaml",
+        "model_dir": "/default/models",
         "docker_container_name": "llama-swap",
         "backup_dir": "/default/backups",
         "docs_dir": "/default/docs",
         "health_check_url": "http://localhost:8080/v1/models",
         "health_check_timeout": 30,
         "health_check_interval": 2,
-        "log_file": "/default/logs",
+        "log_dir": "/default/logs",
     }
 
     yaml_path = tmp_path / "llama-config.yaml"
@@ -126,21 +126,21 @@ def test_load_settings_cli_overrides(tmp_path):
             with patch("yaml.dump"):
                 settings = load_settings(Namespace(config_path="/cli/config.yaml"))
 
-    assert settings["config_path"] == "/cli/config.yaml"
-    assert settings["model_directory"] == "/default/models"
+    assert settings["config_file"] == "/cli/config.yaml"
+    assert settings["model_dir"] == "/default/models"
 
 
 def test_load_settings_persists_yaml(tmp_path):
     defaults = {
-        "config_path": "/default/config.yaml",
-        "model_directory": "/default/models",
+        "config_file": "/default/config.yaml",
+        "model_dir": "/default/models",
         "docker_container_name": "llama-swap",
         "backup_dir": "/default/backups",
         "docs_dir": "/default/docs",
         "health_check_url": "http://localhost:8080/v1/models",
         "health_check_timeout": 30,
         "health_check_interval": 2,
-        "log_file": "/default/logs",
+        "log_dir": "/default/logs",
     }
 
     yaml_path = tmp_path / "llama-config.yaml"
@@ -155,7 +155,7 @@ def test_load_settings_persists_yaml(tmp_path):
 
     with open(yaml_path) as f:
         content = f.read()
-    assert "config_path:" in content
+    assert "config_file:" in content
     assert "/cli/config.yaml" in content
 
 

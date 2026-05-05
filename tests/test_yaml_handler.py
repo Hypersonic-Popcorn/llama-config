@@ -8,15 +8,15 @@ import pytest
 @pytest.fixture
 def mock_settings(tmp_path):
     with patch("src.core.yaml_handler.settings") as mock:
-        mock.config_path = tmp_path / "config.yaml"
+        mock.config_file = tmp_path / "config.yaml"
         mock.backup_dir = tmp_path / "backups"
-        mock.model_directory = tmp_path / "models"
+        mock.model_dir = tmp_path / "models"
         mock.docs_dir = tmp_path / "docs"
         mock.docker_container_name = "llama-swap"
         mock.health_check_url = "http://localhost:8080/v1/models"
         mock.health_check_timeout = 30
         mock.health_check_interval = 2
-        mock.log_file = tmp_path / "logs"
+        mock.log_dir = tmp_path / "logs"
         yield mock
 
 
@@ -34,7 +34,7 @@ def _write_yaml(path, data):
 
 
 def test_read_config_returns_dict(mock_settings):
-    config_path = mock_settings.config_path
+    config_path = mock_settings.config_file
     _write_yaml(config_path, {"model": "llama", "n_gpu_layers": 35})
 
     from src.core.yaml_handler import read_config
@@ -45,7 +45,7 @@ def test_read_config_returns_dict(mock_settings):
 
 
 def test_read_config_returns_empty_on_not_found(mock_settings):
-    config_path = mock_settings.config_path
+    config_path = mock_settings.config_file
     assert config_path.exists() is False
 
     from src.core.yaml_handler import read_config
@@ -56,7 +56,7 @@ def test_read_config_returns_empty_on_not_found(mock_settings):
 
 
 def test_read_config_returns_empty_on_parse_error(mock_settings):
-    config_path = mock_settings.config_path
+    config_path = mock_settings.config_file
     config_path.write_text("{{invalid yaml\n")
 
     from src.core.yaml_handler import read_config
@@ -76,7 +76,7 @@ def test_write_config_writes_yaml(mock_settings):
     from ruamel.yaml import YAML
 
     yaml = YAML()
-    with open(mock_settings.config_path, "r") as f:
+    with open(mock_settings.config_file, "r") as f:
         result = yaml.load(f)
     assert result == data
 
@@ -105,7 +105,7 @@ def test_write_config_adds_to_history(mock_settings):
     with open(history_path, "r") as f:
         history = json.load(f)
     assert len(history) == 1
-    assert history[0]["config_path"] == str(mock_settings.config_path)
+    assert history[0]["config_path"] == str(mock_settings.config_file)
 
 
 def test_write_config_with_label(mock_settings):
@@ -124,7 +124,7 @@ def test_write_config_with_label(mock_settings):
 def test_write_config_propagates_permission_error(mock_settings):
     data = {"model": "llama"}
 
-    mock_settings.config_path = Path("/root/protected/config.yaml")
+    mock_settings.config_file = Path("/root/protected/config.yaml")
 
     from src.core.yaml_handler import write_config
 
@@ -142,7 +142,7 @@ def test_list_backups_returns_list(mock_settings):
                     "backup_id": "20250101_120000_config.yaml",
                     "timestamp": "2025-01-01T12:00:00",
                     "label": None,
-                    "config_path": str(mock_settings.config_path),
+                    "config_path": str(mock_settings.config_file),
                 }
             ],
             f,
@@ -186,7 +186,7 @@ def test_restore_backup_restores_file(mock_settings):
 
     original_config = Path("/tmp/original_config.yaml")
     original_config.write_bytes(b"model: mistral\n")
-    mock_settings.config_path = original_config
+    mock_settings.config_file = original_config
 
     from src.core.yaml_handler import restore_backup
 
@@ -220,9 +220,9 @@ def test_restore_backup_raises_permission_error(tmp_write_protect_dir):
     config_path.chmod(0o000)
 
     with patch("src.core.yaml_handler.settings") as mock:
-        mock.config_path = config_path
+        mock.config_file = config_path
         mock.backup_dir = backup_dir
-        mock.model_directory = tmp_write_protect_dir / "models"
+        mock.model_dir = tmp_write_protect_dir / "models"
         mock.docs_dir = tmp_write_protect_dir / "docs"
         mock.docker_container_name = "llama-swap"
 

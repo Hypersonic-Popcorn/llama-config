@@ -149,8 +149,8 @@ def load_settings(args):
 
     # Override with CLI args (non-None only)
     cli_map = {
-        "config_path": args.config_path,
-        "model_directory": args.model_dir,
+        "config_file": args.config_path,
+        "model_dir": args.model_dir,
         "docker_container_name": args.container,
         "backup_dir": args.backup_dir,
         "docs_dir": args.docs_dir,
@@ -176,15 +176,15 @@ def load_settings(args):
 def apply_settings(settings):
     """Override settings via environment variables for pydantic Settings."""
     env_map = {
-        "config_path": "CONFIG_PATH",
-        "model_directory": "MODEL_DIRECTORY",
+        "config_file": "CONFIG_FILE",
+        "model_dir": "MODEL_DIR",
         "docker_container_name": "DOCKER_CONTAINER_NAME",
         "backup_dir": "BACKUP_DIR",
         "docs_dir": "DOCS_DIR",
         "health_check_url": "HEALTH_CHECK_URL",
         "health_check_timeout": "HEALTH_CHECK_TIMEOUT",
         "health_check_interval": "HEALTH_CHECK_INTERVAL",
-        "log_file": "LOG_FILE",
+        "log_dir": "LOG_DIR",
     }
 
     for key, env_var in env_map.items():
@@ -198,15 +198,15 @@ def _defaults():
 
     s = Settings()
     return {
-        "config_path": str(s.config_path),
-        "model_directory": str(s.model_directory),
+        "config_file": str(s.config_file),
+        "model_dir": str(s.model_dir),
         "docker_container_name": s.docker_container_name,
         "backup_dir": str(s.backup_dir),
         "docs_dir": str(s.docs_dir),
         "health_check_url": s.health_check_url,
         "health_check_timeout": s.health_check_timeout,
         "health_check_interval": s.health_check_interval,
-        "log_file": str(s.log_file),
+        "log_dir": str(s.log_dir),
     }
 
 
