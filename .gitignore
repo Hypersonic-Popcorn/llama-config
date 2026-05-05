@@ -35,6 +35,9 @@ lerna-debug.log*
 # Local test directory
 local_test/
 
+# Scanned models cache (machine-specific)
+scanned_models.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

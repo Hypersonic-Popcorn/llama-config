@@ -1,5 +1,7 @@
 import logging
 import os
+from datetime import datetime, timezone
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, cast
 
@@ -11,6 +13,79 @@ from gguf import GGUFValueType
 from src.core.model import Model, ScanResult
 
 logger = logging.getLogger(__name__)
+
+SCANNED_MODELS_PATH = "scanned_models.yaml"
+
+
+def _model_fields(model: Model) -> dict[str, Any]:
+    return {k: v for k, v in asdict(model).items() if v is not None}
+
+
+def save_scanned_models(models: list[Model], errors: list[str]) -> None:
+    with open(SCANNED_MODELS_PATH, "w") as f:
+        f.write(f"timestamp: \"{datetime.now(timezone.utc).isoformat()}\"\n")
+        f.write("models:\n")
+        for m in models:
+            fields = _model_fields(m)
+            f.write("  - {}\n".format(", ".join(
+                "{}: {}".format(k, repr(v) if isinstance(v, str) else v)
+                for k, v in fields.items()
+            )))
+        if errors:
+            f.write("errors:\n")
+            for e in errors:
+                f.write("  - {}\n".format(repr(e)))
+
+
+def load_scanned_models() -> tuple[list[Model], list[str], bool]:
+    path = Path(SCANNED_MODELS_PATH)
+    if not path.exists():
+        return [], [], False
+    try:
+        models = []
+        errors = []
+        in_models = False
+        in_errors = False
+        with open(path) as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped.startswith("timestamp:"):
+                    continue
+                if stripped == "models:":
+                    in_models = True
+                    in_errors = False
+                    continue
+                if stripped == "errors:":
+                    in_models = False
+                    in_errors = True
+                    continue
+                if in_models and stripped.startswith("- "):
+                    parts = stripped[2:]
+                    fields = {}
+                    for item in parts.split(","):
+                        if ":" in item:
+                            k, v = item.split(":", 1)
+                            k = k.strip()
+                            v = v.strip()
+                            if v.startswith("'") or v.startswith('"'):
+                                v = v.strip("''\"")
+                            elif v.isdigit():
+                                v = int(v)
+                            elif v.startswith("0.") or (v.startswith("-") and not v.startswith("- ")):
+                                try:
+                                    v = float(v)
+                                except ValueError:
+                                    pass
+                            fields[k] = v
+                    models.append(Model(**{k: v for k, v in fields.items()}))
+                if in_errors and stripped.startswith("- "):
+                    err = stripped[2:].strip("'\"")
+                    errors.append(err)
+        logger.info("Loaded %d models from %s", len(models), SCANNED_MODELS_PATH)
+        return models, errors, True
+    except Exception as e:
+        logger.warning("Failed to load scanned models: %s", e)
+        return [], [], False
 
 
 def _get_field_value(reader: gguf.GGUFReader, key: str) -> Any:
@@ -86,9 +161,16 @@ def read_model_metadata(path: str | Path) -> Model | None:
     )
 
 
-def scan_models(directory: str | Path) -> ScanResult:
-    result = ScanResult()
+def scan_models(directory: str | Path, force: bool = False) -> ScanResult:
     directory = Path(directory)
+
+    if not force:
+        models, errors, had_cache = load_scanned_models()
+        if had_cache:
+            logger.info("Using cached scan results")
+            return ScanResult(models=models, errors=errors)
+
+    result = ScanResult()
 
     for root, _dirs, files in os.walk(directory):
         for filename in files:
@@ -110,4 +192,5 @@ def scan_models(directory: str | Path) -> ScanResult:
 
             result.models.append(meta)
 
+    save_scanned_models(result.models, result.errors)
     return result

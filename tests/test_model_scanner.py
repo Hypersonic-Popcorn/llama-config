@@ -146,14 +146,16 @@ def test_scan_models_returns_list_of_models(tmp_path):
             return reader_a
         return reader_b
 
-    with patch(gguf_patch, side_effect=mock_reader_side_effect):
-        with patch("os.path.getsize", return_value=1_000_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, side_effect=mock_reader_side_effect):
+                with patch("os.path.getsize", return_value=1_000_000):
+                    result = scan_models(tmp_path)
 
-    assert isinstance(result, ScanResult)
-    assert len(result.models) == 2
-    names = {m.name for m in result.models}
-    assert names == {"model-a", "model-b"}
+        assert isinstance(result, ScanResult)
+        assert len(result.models) == 2
+        names = {m.name for m in result.models}
+        assert names == {"model-a", "model-b"}
 
 
 def test_scan_models_skips_non_gguf_files(tmp_path):
@@ -162,11 +164,13 @@ def test_scan_models_skips_non_gguf_files(tmp_path):
     txt_file = tmp_path / "notes.txt"
     txt_file.write_text("hello")
 
-    with patch(gguf_patch, return_value=_make_reader({"general.name": "model"})):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, return_value=_make_reader({"general.name": "model"})):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 1
+        assert len(result.models) == 1
 
 
 def test_scan_models_collects_errors_for_corrupt_files(tmp_path):
@@ -180,26 +184,30 @@ def test_scan_models_collects_errors_for_corrupt_files(tmp_path):
             return _make_reader({"general.name": "good"})
         raise OSError("corrupt")
 
-    with patch(gguf_patch, side_effect=mock_reader_side_effect):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, side_effect=mock_reader_side_effect):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 1
-    assert result.models[0].name == "good"
-    assert len(result.errors) == 1
-    assert "InvalidModel:" in result.errors[0]
-    assert "bad.gguf" in result.errors[0]
+        assert len(result.models) == 1
+        assert result.models[0].name == "good"
+        assert len(result.errors) == 1
+        assert "InvalidModel:" in result.errors[0]
+        assert "bad.gguf" in result.errors[0]
 
 
 def test_scan_models_handles_empty_directory(tmp_path):
     dummy = tmp_path / "dummy.gguf"
     dummy.write_text("dummy")
-    with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 1
-    assert result.models[0].name == "dummy"
+        assert len(result.models) == 1
+        assert result.models[0].name == "dummy"
 
 
 def test_scan_models_recurses_into_subdirectories(tmp_path):
@@ -216,13 +224,15 @@ def test_scan_models_recurses_into_subdirectories(tmp_path):
             return _make_reader({"general.name": "root-model"})
         return _make_reader({"general.name": "sub-model"})
 
-    with patch(gguf_patch, side_effect=mock_reader_side_effect):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, side_effect=mock_reader_side_effect):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 2
-    names = {m.name for m in result.models}
-    assert names == {"root-model", "sub-model"}
+        assert len(result.models) == 2
+        names = {m.name for m in result.models}
+        assert names == {"root-model", "sub-model"}
 
 
 def test_scan_models_handles_permission_error_in_subdir(tmp_path):
@@ -239,12 +249,14 @@ def test_scan_models_handles_permission_error_in_subdir(tmp_path):
             raise OSError("permission denied")
         return _make_reader({"general.name": "good"})
 
-    with patch(gguf_patch, side_effect=mock_reader_side_effect):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, side_effect=mock_reader_side_effect):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 1
-    assert result.models[0].name == "good"
+        assert len(result.models) == 1
+        assert result.models[0].name == "good"
 
 
 def test_read_model_metadata_handles_field_index_error():
@@ -314,24 +326,28 @@ def test_scan_models_handles_unreadable_gguf_data(tmp_path):
             return _make_reader({"general.name": "good"})
         raise ValueError("invalid gguf")
 
-    with patch(gguf_patch, side_effect=mock_reader_side_effect):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, side_effect=mock_reader_side_effect):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 1
-    assert result.models[0].name == "good"
-    assert len(result.errors) == 1
-    assert "InvalidModel:" in result.errors[0]
-    assert "corrupt.gguf" in result.errors[0]
+        assert len(result.models) == 1
+        assert result.models[0].name == "good"
+        assert len(result.errors) == 1
+        assert "InvalidModel:" in result.errors[0]
+        assert "corrupt.gguf" in result.errors[0]
 
 
 def test_scan_models_returns_empty_when_no_gguf_files(tmp_path):
     empty_file = tmp_path / "notes.txt"
     empty_file.write_text("nothing here")
 
-    with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
-        with patch("os.path.getsize", return_value=1_000):
-            result = scan_models(tmp_path)
+    with patch("src.core.model_scanner.load_scanned_models", return_value=([], [], False)):
+        with patch("src.core.model_scanner.save_scanned_models"):
+            with patch(gguf_patch, return_value=_make_reader({"general.name": "dummy"})):
+                with patch("os.path.getsize", return_value=1_000):
+                    result = scan_models(tmp_path)
 
-    assert len(result.models) == 0
-    assert len(result.errors) == 0
+        assert len(result.models) == 0
+        assert len(result.errors) == 0
