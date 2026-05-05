@@ -162,11 +162,14 @@ This preserves comments, quote styles, and formatting as much as possible.
 5. Handle files that are incomplete or unreadable without crashing
 
 **Useful metadata fields from gguf:**
-- `general.name`
-- `general.architecture`
-- `llama.context_length`
-- `general.parameter_count`
-- Quantization info
+- `general.name`, `general.basename`, `general.architecture`, `general.file_type`,
+  `general.license`, `general.license.link`, `general.finetune`,
+  `general.quantization_version`, `general.size_label`, `general.type`
+- `general.sampling.temp`, `general.sampling.top_k`, `general.sampling.top_p`
+- `<arch>.block_count` (architecture-specific, e.g. `gemma4.block_count`)
+- `<arch>.context_length` (NOT `general.context_length` — always architecture-specific)
+- **Always consult `@rules/parsing_gguf.md`** when working on `model_scanner.py` or
+  `model_routes.py` — it documents the internal `gguf` library API and which fields to parse.
 
 **Key functions:**
 
@@ -174,6 +177,10 @@ This preserves comments, quote styles, and formatting as much as possible.
 def scan_models(directory)        # Returns list of model dicts
 def read_model_metadata(path)     # Returns metadata dict for one .gguf file
 ```
+
+**Use the internal `gguf` API** — `reader.fields` returns `ReaderField` objects with
+`parts` (numpy memmap arrays) and `types`. There is no documented `metadata` property.
+See `@rules/parsing_gguf.md` for the full decoding strategy.
 
 ---
 
