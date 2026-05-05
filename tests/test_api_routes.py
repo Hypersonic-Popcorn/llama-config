@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+from src.main import app
 
 VALID_CONFIG = {
     "healthCheckTimeout": 500,
