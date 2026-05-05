@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -48,13 +49,19 @@ def main():
         cwd=str(PROJECT_ROOT / "frontend"),
     )
 
+    shutdown = threading.Event()
+
     def handle_signal(signum, _frame):
         print("\nShutting down...")
-        backend_proc.terminate()
-        frontend_proc.terminate()
-        backend_proc.wait()
-        frontend_proc.wait()
-        sys.exit(0)
+        shutdown.set()
+        try:
+            backend_proc.terminate()
+        except ProcessLookupError:
+            pass
+        try:
+            frontend_proc.terminate()
+        except ProcessLookupError:
+            pass
 
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
@@ -63,10 +70,35 @@ def main():
     print("Frontend: http://localhost:5173")
     print("(Ctrl+C to stop)")
 
-    try:
+    # Wait on backend in a thread so we can detect its exit
+    def wait_backend():
         backend_proc.wait()
+
+    backend_thread = threading.Thread(target=wait_backend, daemon=True)
+    backend_thread.start()
+
+    try:
+        while not shutdown.is_set():
+            shutdown.wait(0.5)
+        backend_thread.join(timeout=5)
     except KeyboardInterrupt:
-        handle_signal(signal.SIGINT, None)
+        pass
+
+    # Wait for processes to fully exit
+    try:
+        backend_proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        backend_proc.kill()
+        backend_proc.wait()
+
+    try:
+        frontend_proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        frontend_proc.kill()
+        frontend_proc.wait()
+
+    print("Done.")
+    sys.exit(0)
 
 
 def parse_args():
