@@ -18,6 +18,9 @@ def main():
     settings = load_settings(args)
     apply_settings(settings)
 
+    # Set scanned models path to CWD for the backend process
+    os.environ["SCANNED_MODELS_PATH"] = str(Path.cwd() / "scanned_models.yaml")
+
     print("Starting backend...")
     backend_proc = subprocess.Popen(
         [
@@ -33,6 +36,7 @@ def main():
             "info",
         ],
         cwd=PROJECT_ROOT,
+        env=os.environ,
     )
 
     print("Waiting for backend to be ready...")
@@ -123,7 +127,7 @@ def parse_args():
 def load_settings(args):
     """Load settings from CLI args and llama-config.yaml."""
     defaults = _defaults()
-    file_path = PROJECT_ROOT / SETTINGS_YAML
+    file_path = Path.cwd() / SETTINGS_YAML
 
     # Load from YAML file if it exists
     if file_path.exists():

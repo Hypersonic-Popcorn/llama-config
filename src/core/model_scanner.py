@@ -14,7 +14,7 @@ from src.core.model import Model, ScanResult
 
 logger = logging.getLogger(__name__)
 
-SCANNED_MODELS_PATH = "scanned_models.yaml"
+SCANNED_MODELS_PATH = os.environ.get("SCANNED_MODELS_PATH", "scanned_models.yaml")
 
 
 def _model_fields(model: Model) -> dict[str, Any]:

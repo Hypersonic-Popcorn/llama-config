@@ -146,7 +146,7 @@ def test_load_settings_persists_yaml(tmp_path):
     yaml_path = tmp_path / "llama-config.yaml"
     yaml_path.write_text("")
 
-    with patch("src.app.PROJECT_ROOT", tmp_path):
+    with patch("pathlib.Path.cwd", return_value=tmp_path):
         with patch("src.app._defaults", return_value=defaults):
             with patch("yaml.safe_load", return_value=None):
                 settings = load_settings(Namespace(config_path="/cli/config.yaml"))
