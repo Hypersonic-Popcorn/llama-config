@@ -3,10 +3,15 @@
 ```
 uv run pytest
 PY_VER=$(cat .python-version | tr -d '[:space:]'); MAJOR=$(echo $PY_VER | cut -d. -f1); MINOR=$(echo $PY_VER | cut -d. -f2); uv run black --target-version "py${MAJOR}${MINOR}" .
+uv run basedpyright
 ```
 
 - Wrap lines at 88 characters (per `.flake8` and `[tool.black]` line-length).
-- Run `uv run basedpyright` (auto-detects Python version from `.python-version`).
+- Before any `git stash`, `commit`, or `merge`, verify:
+  - All tests pass (`uv run pytest`)
+  - Coverage is at least 80% (`uv run pytest --cov=src --cov-report=term-missing`)
+  - Code is formatted (`uv run black --target-version "py312" .`)
+  - Type checking passes (`uv run basedpyright`)
 
 ## Architecture
 
