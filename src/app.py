@@ -13,13 +13,31 @@ import yaml
 SETTINGS_YAML = "llama-config.yaml"
 
 
+def config_dir():
+    """Return XDG config directory: $XDG_CONFIG_HOME/llama-config."""
+    xdg = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(xdg) / "llama-config"
+
+
 def main():
     args = parse_args()
     settings = load_settings(args)
-    apply_settings(settings)
+    config_path = config_dir()
+    settings_file = config_path / SETTINGS_YAML
 
-    # Set scanned models path to CWD for the backend process
-    os.environ["SCANNED_MODELS_PATH"] = str(Path.cwd() / "scanned_models.yaml")
+    if args.command == "init":
+        settings = run_init(settings, args)
+        save_settings(settings, settings_file)
+        apply_settings(settings)
+
+    elif args.command == "start":
+        if not settings_file.exists():
+            settings = run_init(settings, args)
+            save_settings(settings, settings_file)
+        apply_settings(settings)
+
+    # Set scanned models path to XDG config dir for the backend process
+    os.environ["SCANNED_MODELS_PATH"] = str(config_path / "scanned_models.yaml")
 
     print("Starting backend...")
     backend_proc = subprocess.Popen(
@@ -105,6 +123,90 @@ def main():
     sys.exit(0)
 
 
+def save_settings(settings, path):
+    """Save settings dict to YAML file."""
+    try:
+        with open(path, "w") as f:
+            yaml.dump(settings, f, default_flow_style=False)
+    except Exception as e:
+        print(f"Warning: could not write {path}: {e}")
+
+
+def _collect_cli_args(args):
+    """Collect and validate CLI args for init mode."""
+    cli_map = {
+        "config_file": args.config_path,
+        "model_dir": args.model_dir,
+        "docker_container_name": args.container,
+        "backup_dir": args.backup_dir,
+        "docs_dir": args.docs_dir,
+        "log_dir": args.log_dir,
+        "health_check_url": args.health_url,
+        "health_check_timeout": args.health_timeout,
+        "health_check_interval": args.health_interval,
+    }
+
+    for settings_key, cli_val in cli_map.items():
+        if cli_val is not None:
+            if settings_key in (
+                "config_file",
+                "model_dir",
+                "docs_dir",
+                "backup_dir",
+                "log_dir",
+            ):
+                path = Path(cli_val)
+                if not path.exists():
+                    print(f"Error: path does not exist: {cli_val}")
+                    sys.exit(1)
+
+    return {k: v for k, v in cli_map.items() if v is not None}
+
+
+def run_init(settings, args):
+    """Interactive init wizard. Prompts for all settings, creates dirs."""
+    print("\n=== llama-config setup ===\n")
+    config_path = config_dir()
+    config_path.mkdir(parents=True, exist_ok=True)
+
+    cli_overrides = _collect_cli_args(args)
+
+    prompts = [
+        ("config_file", "Path to config.yaml (file)"),
+        ("model_dir", "Model directory (created if missing)"),
+        ("docs_dir", "Docs directory (created if missing)"),
+        ("backup_dir", "Backup directory (created if missing)"),
+        ("log_dir", "Log directory (created if missing)"),
+        ("docker_container_name", "Docker container name"),
+        ("health_check_url", "Health check URL"),
+        ("health_check_timeout", "Health check timeout (seconds)"),
+        ("health_check_interval", "Health check poll interval (seconds)"),
+    ]
+
+    for key, description in prompts:
+        default = settings.get(key)
+        if key in cli_overrides:
+            value = cli_overrides[key]
+            print(f"  {description}: {value}")
+            settings[key] = value
+            continue
+
+        display = default if default != "" else ""
+        prompt_text = f"{description} [{display}]: " if display else f"{description}: "
+        user_input = input(prompt_text).strip()
+        value = user_input if user_input else default
+        settings[key] = value
+        print(f"  {description}: {value}")
+
+    # Create directories that don't exist
+    for key in ("model_dir", "docs_dir", "backup_dir", "log_dir"):
+        path = Path(settings[key])
+        path.mkdir(parents=True, exist_ok=True)
+
+    print("\nDone.")
+    return settings
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="llama-config: start backend + frontend with a single command.",
@@ -114,6 +216,7 @@ def parse_args():
     parser.add_argument("-n", "--container", help="Docker container name")
     parser.add_argument("-b", "--backup-dir", help="Backup directory path")
     parser.add_argument("-d", "--docs-dir", help="llama-swap docs directory")
+    parser.add_argument("-l", "--log-dir", help="Log directory path")
     parser.add_argument("-u", "--health-url", help="Health check URL")
     parser.add_argument(
         "--health-timeout", type=int, help="Health check timeout (seconds)"
@@ -121,13 +224,20 @@ def parse_args():
     parser.add_argument(
         "--health-interval", type=int, help="Health check poll interval (seconds)"
     )
-    return parser.parse_args()
+
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("init", help="Interactive setup wizard")
+
+    args = parser.parse_args()
+    if args.command is None:
+        args.command = "start"
+    return args
 
 
 def load_settings(args):
     """Load settings from CLI args and llama-config.yaml."""
     defaults = _defaults()
-    file_path = Path.cwd() / SETTINGS_YAML
+    file_path = config_dir() / SETTINGS_YAML
 
     # Load from YAML file if it exists
     if file_path.exists():
@@ -154,6 +264,7 @@ def load_settings(args):
         "docker_container_name": args.container,
         "backup_dir": args.backup_dir,
         "docs_dir": args.docs_dir,
+        "log_dir": args.log_dir,
         "health_check_url": args.health_url,
         "health_check_timeout": args.health_timeout,
         "health_check_interval": args.health_interval,
@@ -162,13 +273,6 @@ def load_settings(args):
     for settings_key, cli_val in cli_map.items():
         if cli_val is not None:
             settings[settings_key] = cli_val
-
-    # Save back to YAML file (persist all current values)
-    try:
-        with open(file_path, "w") as f:
-            yaml.dump(settings, f, default_flow_style=False)
-    except Exception as e:
-        print(f"Warning: could not write {SETTINGS_YAML}: {e}")
 
     return settings
 
